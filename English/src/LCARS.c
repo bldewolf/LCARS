@@ -14,8 +14,6 @@ Window window;
 
 BmpContainer background_image;
 
-BmpContainer meter_bar_image;
-
 // TODO: Handle 12/24 mode preference when it's exposed.
 
 
@@ -116,8 +114,10 @@ GRect cell_location(int col, int row) {
 
 void set_container_image(BmpContainer *bmp_container, const int resource_id, GPoint origin) {
     
-    layer_remove_from_parent(&bmp_container->layer.layer);
-    bmp_deinit_container(bmp_container);
+    if(bmp_container->data) {
+        layer_remove_from_parent(&bmp_container->layer.layer);
+        bmp_deinit_container(bmp_container);
+    }
     
     bmp_init_container(resource_id, bmp_container);
     
@@ -225,7 +225,6 @@ void display_layer_update_callback(Layer *me, GContext* ctx) {
     unsigned short display_hour = get_display_hour(t.tm_hour);
     graphics_context_set_fill_color(ctx, GColorWhite);
     
-    
     for (int cell_column_index = 0; cell_column_index < display_hour/10; cell_column_index++) {
         
         
@@ -277,12 +276,18 @@ void handle_init(AppContextRef ctx) {
     layer_add_child(&window.layer, &background_image.layer.layer);
     layer_add_child(&window.layer,&display_layer);
     
- 
-    
-    
     // Avoids a blank screen on watch start.
     PblTm tick_time;
     
+    for (int i = 0; i < TOTAL_DATE_DIGITS; i++) {
+        date_digits_images[i].data = NULL;
+    }
+    for (int i = 0; i < TOTAL_TIME_DIGITS; i++) {
+        time_digits_images[i].data = NULL;
+    }
+    for (int i=0; i < TOTAL_DIGITS; i++) {
+        digits[i].data = NULL;
+    }
     get_time(&tick_time);
     update_display(&tick_time);
     
@@ -294,11 +299,10 @@ void handle_deinit(AppContextRef ctx) {
     bmp_deinit_container(&background_image);
     
     bmp_deinit_container(&day_name_image);
-    
+
     for (int i = 0; i < TOTAL_DATE_DIGITS; i++) {
         bmp_deinit_container(&date_digits_images[i]);
     }
-    
     for (int i = 0; i < TOTAL_TIME_DIGITS; i++) {
         bmp_deinit_container(&time_digits_images[i]);
     }
